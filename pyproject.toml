@@ -1,0 +1,11 @@
+[project]
+name = "opslib-cloudflare"
+version = "0.0.1"
+dependencies = [
+    "pyopslib",
+]
+
+[tool.setuptools]
+packages = [
+    "opslib_cloudflare",
+]
