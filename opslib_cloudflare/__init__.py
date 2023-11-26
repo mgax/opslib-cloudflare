@@ -1,15 +1,17 @@
 import json
 from base64 import b64encode
+from dataclasses import dataclass
 from typing import cast
 
-from opslib import Component, Lazy, Prop, evaluate, lazy_property
+from opslib import Lazy, MaybeLazy, evaluate, lazy_property
 from opslib.cli import ComponentGroup
+from opslib.components import TypedComponent
 from opslib.terraform import TerraformProvider
 
 from .random_secret import RandomSecret
 
 
-class Cloudflare(Component):
+class Cloudflare(TypedComponent()):
     def build(self):
         self.provider = TerraformProvider(
             name="cloudflare",
@@ -42,12 +44,14 @@ class Cloudflare(Component):
                 print(account["id"], account["name"])
 
 
-class CloudflareAccount(Component):
-    class Props:
-        cloudflare = Prop(Cloudflare)
-        name = Prop(str)
-        account_id = Prop(str, lazy=True)
+@dataclass
+class CloudflareAccountProps:
+    cloudflare: Cloudflare
+    name: str
+    account_id: MaybeLazy[str]
 
+
+class CloudflareAccount(TypedComponent(CloudflareAccountProps)):
     def build(self):
         self.zones = self.props.cloudflare.provider.data(
             type="cloudflare_zones",
@@ -86,12 +90,14 @@ class CloudflareAccount(Component):
         )
 
 
-class CloudflareZone(Component):
-    class Props:
-        cloudflare = Prop(Cloudflare)
-        name = Prop(str)
-        zone_id = Prop(str, lazy=True)
+@dataclass
+class CloudflareZoneProps:
+    cloudflare: Cloudflare
+    name: str
+    zone_id: MaybeLazy[str]
 
+
+class CloudflareZone(TypedComponent(CloudflareZoneProps)):
     @property
     def zone_id(self):
         return self.props.zone_id
@@ -104,12 +110,14 @@ class CloudflareZone(Component):
         )
 
 
-class CloudflareRecord(Component):
-    class Props:
-        cloudflare = Prop(Cloudflare)
-        zone = Prop(CloudflareZone)
-        args = Prop(dict)
+@dataclass
+class CloudflareRecordProps:
+    cloudflare: Cloudflare
+    zone: CloudflareZone
+    args: dict
 
+
+class CloudflareRecord(TypedComponent(CloudflareRecordProps)):
     def build(self):
         self.record = self.props.cloudflare.provider.resource(
             type="cloudflare_record",
@@ -120,13 +128,15 @@ class CloudflareRecord(Component):
         )
 
 
-class CloudflareTunnel(Component):
-    class Props:
-        cloudflare = Prop(Cloudflare)
-        account_id = Prop(str, lazy=True)
-        name = Prop(str)
-        secret = Prop(str | None, lazy=True)
+@dataclass
+class CloudflareTunnelProps:
+    cloudflare: Cloudflare
+    account_id: MaybeLazy[str]
+    name: str
+    secret: MaybeLazy[str | None] = None
 
+
+class CloudflareTunnel(TypedComponent(CloudflareTunnelProps)):
     def build(self):
         if self.props.secret is None:
             self.secret = RandomSecret()
