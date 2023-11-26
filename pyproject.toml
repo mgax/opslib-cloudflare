@@ -5,6 +5,11 @@ dependencies = [
     "pyopslib",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pyright",
+]
+
 [tool.setuptools]
 packages = [
     "opslib_cloudflare",
