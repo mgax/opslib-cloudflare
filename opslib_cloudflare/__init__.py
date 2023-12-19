@@ -29,6 +29,7 @@ class Cloudflare(TypedComponent()):
             for account in cast(list, evaluate(self.accounts.output["accounts"])):
                 if account["name"] == name:
                     return account["id"]
+            raise RuntimeError("Account not found")
 
         return CloudflareAccount(
             cloudflare=self,
