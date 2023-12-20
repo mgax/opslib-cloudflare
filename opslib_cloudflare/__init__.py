@@ -110,6 +110,13 @@ class CloudflareZone(TypedComponent(CloudflareZoneProps)):
             **kwargs,
         )
 
+    def access_application(self, **kwargs):
+        return CloudflareAccessApplication(
+            cloudflare=self.props.cloudflare,
+            zone=self,
+            **kwargs,
+        )
+
 
 @dataclass
 class CloudflareRecordProps:
@@ -125,6 +132,42 @@ class CloudflareRecord(TypedComponent(CloudflareRecordProps)):
             args=dict(
                 zone_id=self.props.zone.zone_id,
                 **self.props.args,
+            ),
+        )
+
+
+@dataclass
+class CloudflareAccessApplicationProps:
+    cloudflare: Cloudflare
+    zone: CloudflareZone
+    name: str
+    domain: str
+    session_duration: str = "720h"
+
+
+class CloudflareAccessApplication(TypedComponent(CloudflareAccessApplicationProps)):
+    def build(self):
+        self.access_application = self.props.cloudflare.provider.resource(
+            type="cloudflare_access_application",
+            args=dict(
+                zone_id=self.props.zone.zone_id,
+                name=self.props.name,
+                domain=self.props.domain,
+                session_duration=self.props.session_duration,
+            ),
+            output=["id"],
+        )
+
+    def access_policy(self, precedence, name, include, decision="allow"):
+        return self.props.cloudflare.provider.resource(
+            type="cloudflare_access_policy",
+            args=dict(
+                application_id=self.access_application.output["id"],
+                zone_id=self.props.zone.zone_id,
+                precedence=precedence,
+                name=name,
+                include=include,
+                decision=decision,
             ),
         )
 
